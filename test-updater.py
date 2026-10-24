@@ -16,7 +16,7 @@ from minitoo_app import App
 
 ROOT=Path(__file__).resolve().parent
 
-def release(tag='v1.2.14'):
+def release(tag='v99.0.0'):
     prefix=f'https://github.com/{updater.REPOSITORY}/releases/download/{tag}/'
     return {'tag_name':tag,'draft':False,'prerelease':False,'assets':[
         {'name':name,'browser_download_url':prefix+name}
@@ -66,16 +66,16 @@ class Updates(unittest.TestCase):
                 finally: app.close()
 
     def test_release_selection(self):
-        self.assertIsNone(updater.parse_release(release('v1.2.13')))
+        self.assertIsNone(updater.parse_release(release('v'+updater.VERSION)))
         self.assertIsNone(updater.parse_release(release('v1.2.9')))
-        self.assertEqual(updater.parse_release(release())['tag'],'v1.2.14')
+        self.assertEqual(updater.parse_release(release())['tag'],'v99.0.0')
         pre=release();pre['prerelease']=True
         self.assertIsNone(updater.parse_release(pre))
         bad=release();bad['assets'][0]['browser_download_url']='https://example.com/evil.zip'
         with self.assertRaises(ValueError): updater.parse_release(bad)
         bad=release();bad['assets']=[]
         with self.assertRaises(ValueError): updater.parse_release(bad)
-        with self.assertRaises(ValueError): updater.version('v1.2.14-beta')
+        with self.assertRaises(ValueError): updater.version('v99.0.0-beta')
 
     def test_verified_download_and_settings_preservation(self):
         selected=updater.parse_release(release())
@@ -104,7 +104,7 @@ class Updates(unittest.TestCase):
         try:
             app.events.put(('update_checked',updater.parse_release(release())))
             app.pump()
-            self.assertIn('v1.2.14',app.update_button.cget('text'))
+            self.assertIn('v99.0.0',app.update_button.cget('text'))
             app.update_action()
             self.assertIn('EXE',app.update_status.cget('text'))
             app.set_language('en',save=False)
