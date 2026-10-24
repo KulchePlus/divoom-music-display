@@ -9,6 +9,9 @@ class Literal(str):
 
 
 TRANSLATIONS = {
+    'Автообновления': 'Auto updates',
+    'Проверять новые версии только при запуске приложения. Установка — по кнопке.': 'Check for new versions only when the app starts. Installation requires a button click.',
+    'Не удалось сохранить настройку обновлений.': 'Could not save the update preference.',
     'Проверить обновления': 'Check for updates',
     'Проверка обновлений…': 'Checking for updates…',
     'Установлена актуальная версия.': 'You are up to date.',

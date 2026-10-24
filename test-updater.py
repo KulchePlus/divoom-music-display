@@ -29,6 +29,38 @@ def archive(entries):
     return stream.getvalue()
 
 class Updates(unittest.TestCase):
+    def test_auto_check_preference_and_startup_only(self):
+        with tempfile.TemporaryDirectory(dir=ROOT,prefix='update-test-') as folder:
+            self.assertTrue(Path(folder).resolve().is_relative_to(ROOT))
+            self.assertTrue(updater.load_auto_check(folder))
+            updater.save_auto_check(folder,False)
+            self.assertFalse(updater.load_auto_check(folder))
+            updater.save_auto_check(folder,True)
+            self.assertTrue(updater.load_auto_check(folder))
+            root=tk.Tk();root.withdraw()
+            with patch('now_playing.ROOT',Path(folder)):
+                app=App(root,start_worker=False)
+                try:
+                    with patch.object(app,'check_updates') as check:
+                        app.auto_check.set(False)
+                        app.save_auto_check()
+                        app.check_updates_at_startup()
+                        check.assert_not_called()
+                        self.assertFalse(updater.load_auto_check(folder))
+                        app.auto_check.set(True)
+                        app.save_auto_check()
+                        app.check_updates_at_startup()
+                        check.assert_not_called()
+                        app.startup_check_done=False
+                        app.check_updates_at_startup()
+                        app.check_updates_at_startup()
+                        check.assert_called_once()
+                    with patch.object(app,'check_updates') as check:
+                        app.auto_check.set(False)
+                        app.update_action()
+                        check.assert_called_once()
+                finally: app.close()
+
     def test_release_selection(self):
         self.assertIsNone(updater.parse_release(release('v1.2.13')))
         self.assertIsNone(updater.parse_release(release('v1.2.9')))

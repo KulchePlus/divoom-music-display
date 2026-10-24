@@ -19,7 +19,7 @@ from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
 from ui_tooltip import HelpTip
-from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs
+from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style
 
 TITLE = f'Divoom — музыкальный экран · v{VERSION}'
 BG, PANEL, TEXT, MUTED = '#101318', '#191e26', '#f4f6fa', '#929eaf'
@@ -240,6 +240,8 @@ class App:
         self.locale = Localizer()
         self.available_update = None
         self.update_busy = False
+        self.auto_check = tk.BooleanVar(master=root, value=updater.load_auto_check(core.ROOT))
+        self.startup_check_done = False
         self.devices = []
         self.scanning_devices = False
         root.title(TITLE)
@@ -274,6 +276,7 @@ class App:
         style.configure('Language.TButton', font=('Segoe UI', 10, 'bold'), padding=(9, 4),
                         foreground=MUTED, background='#202731', borderwidth=0)
         rounded_buttons(root, style)
+        switch_style(root, style)
         round_window(root)
         outer = tk.Frame(root, bg=BG)
         outer.pack(fill='both', expand=True, padx=28, pady=24)
@@ -367,12 +370,17 @@ class App:
         self.detail.pack(side='left', fill='x', expand=True)
         update_row = tk.Frame(outer, bg=BG)
         update_row.pack(fill='x', pady=(10, 0))
-        self.update_status = tk.Label(update_row, text='', bg=BG, fg=MUTED,
-                                      font=('Segoe UI', 9), anchor='w', wraplength=280)
-        self.update_status.pack(side='left', fill='x', expand=True)
+        self.auto_update_switch = ttk.Checkbutton(update_row, text='  Автообновления',
+            variable=self.auto_check, command=self.save_auto_check, style='Switch.TCheckbutton')
+        self.auto_update_switch.pack(side='left')
+        self.auto_update_tip = HelpTip(self.auto_update_switch,
+            'Проверять новые версии только при запуске приложения. Установка — по кнопке.', self.locale)
         self.update_button = ttk.Button(update_row, text='Проверить обновления',
             command=self.update_action, style='Language.TButton')
         self.update_button.pack(side='right')
+        self.update_status = tk.Label(outer, text='', bg=BG, fg=MUTED,
+                                      font=('Segoe UI', 9), anchor='w', wraplength=580)
+        self.update_status.pack(fill='x', pady=(3, 0))
         self.debug_icon = ImageTk.PhotoImage(bug_icon('#596372'), master=root)
         self.debug_icon_hover = ImageTk.PhotoImage(bug_icon('#929eaf'), master=root)
         self.debug_button = tk.Button(root, image=self.debug_icon, command=self.open_debug,
@@ -387,10 +395,24 @@ class App:
         if start_worker:
             self.controller.thread.start()
             self.refresh_devices()
-            root.after(1500, self.check_updates)
+            root.after(1500, self.check_updates_at_startup)
         else:
             self.device_placeholder()
         root.after(60, self.pump)
+
+    def save_auto_check(self):
+        try:
+            updater.save_auto_check(core.ROOT, self.auto_check.get())
+        except OSError:
+            self.auto_check.set(updater.load_auto_check(core.ROOT))
+            self.update_status.configure(text='Не удалось сохранить настройку обновлений.')
+
+    def check_updates_at_startup(self):
+        if self.startup_check_done or self.closed:
+            return
+        self.startup_check_done = True
+        if self.auto_check.get():
+            self.check_updates()
 
     def update_action(self):
         if self.update_busy:

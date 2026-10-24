@@ -19,6 +19,21 @@ API = f'https://api.github.com/repos/{REPOSITORY}/releases/latest'
 MAX_DOWNLOAD = 100 * 1024 * 1024
 
 
+def load_auto_check(directory):
+    try:
+        value = json.loads((Path(directory)/'update-preferences.json').read_text(encoding='utf-8'))['auto_check']
+        return value if isinstance(value, bool) else True
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+
+
+def save_auto_check(directory, enabled):
+    path = Path(directory)/'update-preferences.json'
+    temporary = path.with_suffix('.json.tmp')
+    temporary.write_text(json.dumps({'auto_check': bool(enabled)}), encoding='utf-8')
+    temporary.replace(path)
+
+
 def version(value):
     match = re.fullmatch(r'v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', value)
     if not match:

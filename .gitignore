@@ -13,6 +13,7 @@ release/
 # Local runtime data
 settings.json*
 ui-preferences.json*
+update-preferences.json*
 device-preferences.json*
 current-track.json
 app-self-test.json
