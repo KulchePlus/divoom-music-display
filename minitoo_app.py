@@ -305,6 +305,8 @@ class App:
             state='readonly', font=('Segoe UI', 10))
         self.device_choice.pack(side='left', fill='x', expand=True)
         self.device_choice.bind('<<ComboboxSelected>>', self.select_device)
+        controls = tk.Frame(outer, bg=BG)
+        controls.pack(side='bottom', fill='x')
         card = tk.Frame(outer, bg=PANEL, highlightbackground='#2b3340', highlightthickness=1)
         self.preview_card = card
         round_widget(card, 8)
@@ -321,7 +323,7 @@ class App:
         self.artist_label = tk.Label(card, text='', bg=PANEL, fg=MUTED,
                                      font=('Segoe UI', 10), anchor='w', wraplength=510, justify='left')
         self.artist_label.pack(fill='x', padx=18, pady=(0, 12))
-        options = tk.LabelFrame(outer, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
+        options = tk.LabelFrame(controls, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
                                 font=('Segoe UI', 9), padx=12, pady=10)
         options.pack(fill='x', pady=(14, 0))
         for column in range(3):
@@ -357,18 +359,18 @@ class App:
         self.compression_info = tk.Label(options, text='Лимит — на один кадр. Общий объём анимации может быть больше. 1 КБ = 1024 байта.',
                                          bg=PANEL, fg=MUTED, font=('Segoe UI', 9), wraplength=580, justify='left', anchor='w')
         self.compression_info.grid(row=2, column=0, columnspan=4, sticky='we', pady=(9, 0))
-        footer = tk.Frame(outer, bg=BG)
+        footer = tk.Frame(controls, bg=BG)
         footer.pack(fill='x', pady=(18, 0))
         tk.Label(footer, text='Divoom MiniToo\nBluetooth · 160 × 128', bg=BG, fg=MUTED,
                  font=('Segoe UI', 10), justify='left').pack(side='left')
         self.button = ttk.Button(footer, text='Подключиться', command=self.toggle, style='Connect.TButton')
         self.button.pack(side='right')
-        status_row = tk.Frame(outer, bg=BG)
+        status_row = tk.Frame(controls, bg=BG)
         status_row.pack(fill='x', pady=(12, 0))
         self.detail = tk.Label(status_row, text='Предпросмотр работает и без подключения к устройству.',
                                bg=BG, fg=MUTED, font=('Segoe UI', 9), wraplength=550, justify='left', anchor='w')
         self.detail.pack(side='left', fill='x', expand=True)
-        update_row = tk.Frame(outer, bg=BG)
+        update_row = tk.Frame(controls, bg=BG)
         update_row.pack(fill='x', pady=(10, 0))
         self.auto_update_switch = ttk.Checkbutton(update_row, text='  Автообновления',
             variable=self.auto_check, command=self.save_auto_check, style='Switch.TCheckbutton')
@@ -378,7 +380,7 @@ class App:
         self.update_button = ttk.Button(update_row, text='Проверить обновления',
             command=self.update_action, style='Language.TButton')
         self.update_button.pack(side='right')
-        self.update_status = tk.Label(outer, text='', bg=BG, fg=MUTED,
+        self.update_status = tk.Label(controls, text='', bg=BG, fg=MUTED,
                                       font=('Segoe UI', 9), anchor='w', wraplength=580)
         self.update_status.pack(fill='x', pady=(3, 0))
         self.debug_icon = ImageTk.PhotoImage(bug_icon('#596372'), master=root)

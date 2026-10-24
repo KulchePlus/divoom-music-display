@@ -37,10 +37,14 @@ class Updates(unittest.TestCase):
             self.assertFalse(updater.load_auto_check(folder))
             updater.save_auto_check(folder,True)
             self.assertTrue(updater.load_auto_check(folder))
-            root=tk.Tk();root.withdraw()
+            root=tk.Tk()
             with patch('now_playing.ROOT',Path(folder)):
                 app=App(root,start_worker=False)
                 try:
+                    root.update()
+                    for widget in (app.auto_update_switch, app.update_button, app.update_status):
+                        self.assertTrue(widget.winfo_ismapped())
+                        self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(), root.winfo_rooty()+root.winfo_height())
                     with patch.object(app,'check_updates') as check:
                         app.auto_check.set(False)
                         app.save_auto_check()
