@@ -19,6 +19,7 @@ app-self-test.json
 debug-results.jsonl
 *.log
 *.pid
+.divoom-update-*/
 assets/
 # Historical experiments and personal previews
 backups/

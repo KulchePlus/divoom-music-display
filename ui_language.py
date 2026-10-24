@@ -9,6 +9,15 @@ class Literal(str):
 
 
 TRANSLATIONS = {
+    'Проверить обновления': 'Check for updates',
+    'Проверка обновлений…': 'Checking for updates…',
+    'Установлена актуальная версия.': 'You are up to date.',
+    'Доступна новая версия.': 'A new version is available.',
+    'Установить ': 'Install ', ' и перезапустить': ' and restart',
+    'Загрузка и проверка SHA-256…': 'Downloading and verifying SHA-256…',
+    'Установка доступна в версии EXE.': 'Installation is available in the EXE build.',
+    'Проверка недоступна. Попробуйте позже.': 'Update check unavailable. Try again later.',
+    'Не удалось установить обновление. Подробности в логе.': 'Could not install the update. See the log for details.',
     'Устройство': 'Device', 'Обновить': 'Refresh',
     'Выберите устройство': 'Select a device', 'Поиск устройств…': 'Finding devices…',
     'Не удалось сохранить устройство: ': 'Could not save the device: ',

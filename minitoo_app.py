@@ -14,6 +14,7 @@ from PIL import Image, ImageTk, ImageDraw
 import now_playing as core
 from debug_window import DebugWindow
 import transmission
+import updater
 from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
@@ -237,6 +238,8 @@ class App:
         self.debug_tip = None
         self.debug_tip_after = None
         self.locale = Localizer()
+        self.available_update = None
+        self.update_busy = False
         self.devices = []
         self.scanning_devices = False
         root.title(TITLE)
@@ -362,6 +365,14 @@ class App:
         self.detail = tk.Label(status_row, text='Предпросмотр работает и без подключения к устройству.',
                                bg=BG, fg=MUTED, font=('Segoe UI', 9), wraplength=550, justify='left', anchor='w')
         self.detail.pack(side='left', fill='x', expand=True)
+        update_row = tk.Frame(outer, bg=BG)
+        update_row.pack(fill='x', pady=(10, 0))
+        self.update_status = tk.Label(update_row, text='', bg=BG, fg=MUTED,
+                                      font=('Segoe UI', 9), anchor='w', wraplength=280)
+        self.update_status.pack(side='left', fill='x', expand=True)
+        self.update_button = ttk.Button(update_row, text='Проверить обновления',
+            command=self.update_action, style='Language.TButton')
+        self.update_button.pack(side='right')
         self.debug_icon = ImageTk.PhotoImage(bug_icon('#596372'), master=root)
         self.debug_icon_hover = ImageTk.PhotoImage(bug_icon('#929eaf'), master=root)
         self.debug_button = tk.Button(root, image=self.debug_icon, command=self.open_debug,
@@ -376,9 +387,47 @@ class App:
         if start_worker:
             self.controller.thread.start()
             self.refresh_devices()
+            root.after(1500, self.check_updates)
         else:
             self.device_placeholder()
         root.after(60, self.pump)
+
+    def update_action(self):
+        if self.update_busy:
+            return
+        if self.available_update:
+            if not getattr(sys, 'frozen', False):
+                self.update_status.configure(text='Установка доступна в версии EXE.')
+                return
+            self.update_busy = True
+            self.update_button.configure(state='disabled')
+            self.update_status.configure(text='Загрузка и проверка SHA-256…')
+            release = dict(self.available_update)
+            def download():
+                try:
+                    staging = updater.prepare(release, core.ROOT)
+                    updater.launch_install(staging, sys.executable, core.RESOURCE_ROOT)
+                    self.events.put(('update_install', None))
+                except Exception:
+                    logging.exception('Update installation failed')
+                    self.events.put(('update_error', 'Не удалось установить обновление. Подробности в логе.'))
+            threading.Thread(target=download, daemon=True, name='Divoom update download').start()
+        else:
+            self.check_updates()
+
+    def check_updates(self):
+        if self.closed or self.update_busy:
+            return
+        self.update_busy = True
+        self.update_button.configure(state='disabled')
+        self.update_status.configure(text='Проверка обновлений…')
+        def check():
+            try:
+                self.events.put(('update_checked', updater.check()))
+            except Exception:
+                logging.exception('Update check failed')
+                self.events.put(('update_error', 'Проверка недоступна. Попробуйте позже.'))
+        threading.Thread(target=check, daemon=True, name='Divoom update check').start()
 
     def toggle(self):
         if self.state in ('connecting', 'connected', 'sending', 'disconnecting'):
@@ -562,6 +611,19 @@ class App:
                     self.compression_info.configure(text=f'Кадр ≤ {meta["max_frame_bytes"]/1024:.2f} / {meta["budget_bytes"]/1024:g} КБ · вся загрузка {meta["bytes"]/1024:.1f} КБ · {meta["frames"]} кадр(ов) · палитра {meta["colors"]} · {meta["codec"]}{quality}{cadence}{warning}', fg='#70d7a3')
                 elif event == 'compression_error':
                     self.compression_info.configure(text=payload, fg='#f48a8a')
+                elif event == 'update_checked':
+                    self.update_busy = False
+                    self.available_update = payload
+                    self.update_status.configure(text='Доступна новая версия.' if payload else 'Установлена актуальная версия.')
+                    self.update_button.configure(state='normal', text=(
+                        f'Установить {payload["tag"]} и перезапустить' if payload else 'Проверить обновления'))
+                elif event == 'update_error':
+                    self.update_busy = False
+                    self.update_status.configure(text=payload)
+                    self.update_button.configure(state='normal')
+                elif event == 'update_install':
+                    self.close()
+                    return
                 elif event.startswith('debug_') and self.debug_window:
                     self.debug_window.handle_event(event, payload)
         except queue.Empty:
@@ -585,6 +647,7 @@ def main():
         try:
             assert (core.RESOURCE_ROOT/'Get-NowPlaying.ps1').exists()
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
+            assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
             track = core.current_track()
             frames, speed = core.animation(track)
             frames, speed, blob, compression = transmission.prepare(frames, speed, transmission.load_settings())

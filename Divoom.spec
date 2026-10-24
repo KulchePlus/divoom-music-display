@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_data_files
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('Get-NowPlaying.ps1', '.'), ('Export-AppIcon.ps1', '.'), ('minitoo.ico', '.')]
+datas = [('Get-NowPlaying.ps1', '.'), ('Export-AppIcon.ps1', '.'), ('Update-App.ps1', '.'), ('minitoo.ico', '.')]
 binaries = []
 hiddenimports = []
 datas += collect_data_files('tzdata')
