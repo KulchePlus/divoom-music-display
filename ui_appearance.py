@@ -100,3 +100,23 @@ def rounded_buttons(root, style):
     style.configure('Connect.TButton', foreground='#101318')
     style.configure('Panel.TButton', font=('Segoe UI', 11), padding=(14, 12))
     root._rounded_button_images = images
+
+
+def switch_style(root, style):
+    images = []
+    for enabled in (False, True):
+        image = Image.new('RGB', (160, 88), '#101318')
+        draw = ImageDraw.Draw(image)
+        draw.rounded_rectangle((0, 4, 159, 83), radius=40,
+                               fill='#ffd34e' if enabled else '#394658')
+        x = 84 if enabled else 12
+        draw.ellipse((x, 12, x+63, 75), fill='#101318' if enabled else '#d5dce6')
+        images.append(ImageTk.PhotoImage(image.resize((40, 22), Image.Resampling.LANCZOS), master=root))
+    style.element_create('AutoUpdate.switch', 'image', images[0], ('selected', images[1]), sticky='w')
+    style.layout('Switch.TCheckbutton', [('Checkbutton.padding', {'sticky': 'nswe', 'children': [
+        ('AutoUpdate.switch', {'side': 'left', 'sticky': 'w'}),
+        ('Checkbutton.label', {'side': 'left', 'sticky': 'w'})]})])
+    style.configure('Switch.TCheckbutton', background='#101318', foreground='#929eaf',
+                    font=('Segoe UI', 9), padding=(0, 2))
+    style.map('Switch.TCheckbutton', background=[('active', '#101318')], foreground=[('active', '#f4f6fa')])
+    root._switch_images = images

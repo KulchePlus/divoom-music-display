@@ -14,11 +14,12 @@ from PIL import Image, ImageTk, ImageDraw
 import now_playing as core
 from debug_window import DebugWindow
 import transmission
+import updater
 from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
 from ui_tooltip import HelpTip
-from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs
+from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style
 
 TITLE = f'Divoom — музыкальный экран · v{VERSION}'
 BG, PANEL, TEXT, MUTED = '#101318', '#191e26', '#f4f6fa', '#929eaf'
@@ -237,6 +238,10 @@ class App:
         self.debug_tip = None
         self.debug_tip_after = None
         self.locale = Localizer()
+        self.available_update = None
+        self.update_busy = False
+        self.auto_check = tk.BooleanVar(master=root, value=updater.load_auto_check(core.ROOT))
+        self.startup_check_done = False
         self.devices = []
         self.scanning_devices = False
         root.title(TITLE)
@@ -271,6 +276,7 @@ class App:
         style.configure('Language.TButton', font=('Segoe UI', 10, 'bold'), padding=(9, 4),
                         foreground=MUTED, background='#202731', borderwidth=0)
         rounded_buttons(root, style)
+        switch_style(root, style)
         round_window(root)
         outer = tk.Frame(root, bg=BG)
         outer.pack(fill='both', expand=True, padx=28, pady=24)
@@ -299,6 +305,8 @@ class App:
             state='readonly', font=('Segoe UI', 10))
         self.device_choice.pack(side='left', fill='x', expand=True)
         self.device_choice.bind('<<ComboboxSelected>>', self.select_device)
+        controls = tk.Frame(outer, bg=BG)
+        controls.pack(side='bottom', fill='x')
         card = tk.Frame(outer, bg=PANEL, highlightbackground='#2b3340', highlightthickness=1)
         self.preview_card = card
         round_widget(card, 8)
@@ -315,7 +323,7 @@ class App:
         self.artist_label = tk.Label(card, text='', bg=PANEL, fg=MUTED,
                                      font=('Segoe UI', 10), anchor='w', wraplength=510, justify='left')
         self.artist_label.pack(fill='x', padx=18, pady=(0, 12))
-        options = tk.LabelFrame(outer, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
+        options = tk.LabelFrame(controls, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
                                 font=('Segoe UI', 9), padx=12, pady=10)
         options.pack(fill='x', pady=(14, 0))
         for column in range(3):
@@ -351,17 +359,30 @@ class App:
         self.compression_info = tk.Label(options, text='Лимит — на один кадр. Общий объём анимации может быть больше. 1 КБ = 1024 байта.',
                                          bg=PANEL, fg=MUTED, font=('Segoe UI', 9), wraplength=580, justify='left', anchor='w')
         self.compression_info.grid(row=2, column=0, columnspan=4, sticky='we', pady=(9, 0))
-        footer = tk.Frame(outer, bg=BG)
+        footer = tk.Frame(controls, bg=BG)
         footer.pack(fill='x', pady=(18, 0))
         tk.Label(footer, text='Divoom MiniToo\nBluetooth · 160 × 128', bg=BG, fg=MUTED,
                  font=('Segoe UI', 10), justify='left').pack(side='left')
         self.button = ttk.Button(footer, text='Подключиться', command=self.toggle, style='Connect.TButton')
         self.button.pack(side='right')
-        status_row = tk.Frame(outer, bg=BG)
+        status_row = tk.Frame(controls, bg=BG)
         status_row.pack(fill='x', pady=(12, 0))
         self.detail = tk.Label(status_row, text='Предпросмотр работает и без подключения к устройству.',
                                bg=BG, fg=MUTED, font=('Segoe UI', 9), wraplength=550, justify='left', anchor='w')
         self.detail.pack(side='left', fill='x', expand=True)
+        update_row = tk.Frame(controls, bg=BG)
+        update_row.pack(fill='x', pady=(10, 0))
+        self.auto_update_switch = ttk.Checkbutton(update_row, text='  Автообновления',
+            variable=self.auto_check, command=self.save_auto_check, style='Switch.TCheckbutton')
+        self.auto_update_switch.pack(side='left')
+        self.auto_update_tip = HelpTip(self.auto_update_switch,
+            'Проверять новые версии только при запуске приложения. Установка — по кнопке.', self.locale)
+        self.update_button = ttk.Button(update_row, text='Проверить обновления',
+            command=self.update_action, style='Language.TButton')
+        self.update_button.pack(side='right')
+        self.update_status = tk.Label(controls, text='', bg=BG, fg=MUTED,
+                                      font=('Segoe UI', 9), anchor='w', wraplength=580)
+        self.update_status.pack(fill='x', pady=(3, 0))
         self.debug_icon = ImageTk.PhotoImage(bug_icon('#596372'), master=root)
         self.debug_icon_hover = ImageTk.PhotoImage(bug_icon('#929eaf'), master=root)
         self.debug_button = tk.Button(root, image=self.debug_icon, command=self.open_debug,
@@ -376,9 +397,61 @@ class App:
         if start_worker:
             self.controller.thread.start()
             self.refresh_devices()
+            root.after(1500, self.check_updates_at_startup)
         else:
             self.device_placeholder()
         root.after(60, self.pump)
+
+    def save_auto_check(self):
+        try:
+            updater.save_auto_check(core.ROOT, self.auto_check.get())
+        except OSError:
+            self.auto_check.set(updater.load_auto_check(core.ROOT))
+            self.update_status.configure(text='Не удалось сохранить настройку обновлений.')
+
+    def check_updates_at_startup(self):
+        if self.startup_check_done or self.closed:
+            return
+        self.startup_check_done = True
+        if self.auto_check.get():
+            self.check_updates()
+
+    def update_action(self):
+        if self.update_busy:
+            return
+        if self.available_update:
+            if not getattr(sys, 'frozen', False):
+                self.update_status.configure(text='Установка доступна в версии EXE.')
+                return
+            self.update_busy = True
+            self.update_button.configure(state='disabled')
+            self.update_status.configure(text='Загрузка и проверка SHA-256…')
+            release = dict(self.available_update)
+            def download():
+                try:
+                    staging = updater.prepare(release, core.ROOT)
+                    updater.launch_install(staging, sys.executable, core.RESOURCE_ROOT)
+                    self.events.put(('update_install', None))
+                except Exception:
+                    logging.exception('Update installation failed')
+                    self.events.put(('update_error', 'Не удалось установить обновление. Подробности в логе.'))
+            threading.Thread(target=download, daemon=True, name='Divoom update download').start()
+        else:
+            self.check_updates()
+
+    def check_updates(self):
+        if self.closed or self.update_busy:
+            return
+        self.update_busy = True
+        self.update_button.configure(state='disabled')
+        self.update_status.configure(text='Проверка обновлений…')
+        def check():
+            try:
+                self.events.put(('update_checked', updater.check()))
+            except Exception:
+                logging.exception('Update check failed')
+                self.events.put(('update_error', 'Проверка недоступна. Попробуйте позже.'))
+        threading.Thread(target=check, daemon=True, name='Divoom update check').start()
 
     def toggle(self):
         if self.state in ('connecting', 'connected', 'sending', 'disconnecting'):
@@ -562,6 +635,19 @@ class App:
                     self.compression_info.configure(text=f'Кадр ≤ {meta["max_frame_bytes"]/1024:.2f} / {meta["budget_bytes"]/1024:g} КБ · вся загрузка {meta["bytes"]/1024:.1f} КБ · {meta["frames"]} кадр(ов) · палитра {meta["colors"]} · {meta["codec"]}{quality}{cadence}{warning}', fg='#70d7a3')
                 elif event == 'compression_error':
                     self.compression_info.configure(text=payload, fg='#f48a8a')
+                elif event == 'update_checked':
+                    self.update_busy = False
+                    self.available_update = payload
+                    self.update_status.configure(text='Доступна новая версия.' if payload else 'Установлена актуальная версия.')
+                    self.update_button.configure(state='normal', text=(
+                        f'Установить {payload["tag"]} и перезапустить' if payload else 'Проверить обновления'))
+                elif event == 'update_error':
+                    self.update_busy = False
+                    self.update_status.configure(text=payload)
+                    self.update_button.configure(state='normal')
+                elif event == 'update_install':
+                    self.close()
+                    return
                 elif event.startswith('debug_') and self.debug_window:
                     self.debug_window.handle_event(event, payload)
         except queue.Empty:
@@ -579,12 +665,28 @@ class App:
 
 
 def main():
+    if '--update-self-test' in sys.argv or '--tls-self-test' in sys.argv:
+        report = {'ok': False}
+        try:
+            import ssl
+            context = ssl.create_default_context()
+            assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
+            result = updater.check() if '--update-self-test' in sys.argv else None
+            report = {'ok': True, 'available': result['tag'] if result else None}
+        except Exception as error:
+            report['error'] = repr(error)
+        (core.ROOT/'update-self-test.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+        return
     if '--self-test' in sys.argv:
         report = {'ok': False}
         root = None
         try:
+            import ssl
+            context = ssl.create_default_context()
+            assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
             assert (core.RESOURCE_ROOT/'Get-NowPlaying.ps1').exists()
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
+            assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
             track = core.current_track()
             frames, speed = core.animation(track)
             frames, speed, blob, compression = transmission.prepare(frames, speed, transmission.load_settings())

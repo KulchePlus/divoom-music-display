@@ -13,12 +13,15 @@ release/
 # Local runtime data
 settings.json*
 ui-preferences.json*
+update-preferences.json*
 device-preferences.json*
 current-track.json
 app-self-test.json
+update-self-test.json
 debug-results.jsonl
 *.log
 *.pid
+.divoom-update-*/
 assets/
 # Historical experiments and personal previews
 backups/

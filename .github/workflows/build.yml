@@ -2,7 +2,7 @@ name: Windows build and release
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -25,6 +25,12 @@ jobs:
       - name: Run offline checks (no Bluetooth uploads)
         shell: pwsh
         run: ./scripts/test.ps1
+      - name: Check HTTPS support in the packaged EXE
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath "$PWD/Divoom.exe" -ArgumentList '--tls-self-test' -Wait -PassThru
+          $report = Get-Content update-self-test.json -Raw | ConvertFrom-Json
+          if ($process.ExitCode -ne 0 -or -not $report.ok) { throw "Packaged TLS check failed: $($report.error)" }
       - name: Package portable release
         shell: pwsh
         run: ./.venv/Scripts/python.exe scripts/package-release.py
