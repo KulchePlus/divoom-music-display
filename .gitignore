@@ -1,0 +1,43 @@
+# Environments and generated builds
+.venv/
+.deps/
+.build-deps/
+.tools/
+.publishing/
+__pycache__/
+*.pyc
+build/
+dist/
+release/
+*.exe
+# Local runtime data
+settings.json*
+ui-preferences.json*
+device-preferences.json*
+current-track.json
+app-self-test.json
+debug-results.jsonl
+*.log
+*.pid
+assets/
+# Historical experiments and personal previews
+backups/
+preview*.png
+album-cover.png
+animation-preview.gif
+animation-test.bin
+background-preview.png
+clock-preview.png
+firefox-preview.png
+first-version-street*.png
+*-evolution-collage.png
+loading-threshold-*.json
+native-text-results.json
+probe_bluetooth.py
+reference-*.py
+test-animation*.py
+test-app-controller.py
+test-loading-threshold.py
+test-native-text.py
+Stop.cmd
+Stop.ps1
