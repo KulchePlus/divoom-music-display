@@ -17,6 +17,7 @@ update-preferences.json*
 device-preferences.json*
 current-track.json
 app-self-test.json
+update-self-test.json
 debug-results.jsonl
 *.log
 *.pid

@@ -665,10 +665,25 @@ class App:
 
 
 def main():
+    if '--update-self-test' in sys.argv or '--tls-self-test' in sys.argv:
+        report = {'ok': False}
+        try:
+            import ssl
+            context = ssl.create_default_context()
+            assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
+            result = updater.check() if '--update-self-test' in sys.argv else None
+            report = {'ok': True, 'available': result['tag'] if result else None}
+        except Exception as error:
+            report['error'] = repr(error)
+        (core.ROOT/'update-self-test.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+        return
     if '--self-test' in sys.argv:
         report = {'ok': False}
         root = None
         try:
+            import ssl
+            context = ssl.create_default_context()
+            assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
             assert (core.RESOURCE_ROOT/'Get-NowPlaying.ps1').exists()
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
             assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
