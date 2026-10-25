@@ -26,6 +26,7 @@ assets/
 # Historical experiments and personal previews
 backups/
 preview*.png
+preview-idle.gif
 album-cover.png
 animation-preview.gif
 animation-test.bin

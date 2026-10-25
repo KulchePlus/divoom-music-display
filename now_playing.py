@@ -81,6 +81,9 @@ def wrap(text, font, width=146):
 
 
 def render(track, page=0, draw_title=True, colon_visible=True, clock_text=None):
+    if is_idle(track):
+        import idle_screen
+        return idle_screen.frames(RESOURCE_ROOT, datetime.now(ZoneInfo('Europe/Moscow')))[0][0]
     cover = None
     if track.get('Cover'):
         try:
@@ -170,8 +173,15 @@ def render(track, page=0, draw_title=True, colon_visible=True, clock_text=None):
     return image
 
 
+def is_idle(track):
+    return not track.get('App') and track.get('Status') == 'Stopped'
+
+
 def animation(track):
     """Each frame is the next complete two-line page, without motion."""
+    if is_idle(track):
+        import idle_screen
+        return idle_screen.frames(RESOURCE_ROOT, datetime.now(ZoneInfo('Europe/Moscow')))
     font = ImageFont.truetype('C:/Windows/Fonts/segoeuib.ttf', 15)
     lines = wrap(track['Title'] or 'Без названия', font)
     clock = datetime.now(ZoneInfo('Europe/Moscow')).strftime('%H:%M')

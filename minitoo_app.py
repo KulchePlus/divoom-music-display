@@ -632,7 +632,7 @@ class App:
                 elif event == 'compression':
                     meta = payload
                     quality = f' · качество {meta["quality"]}' if meta['quality'] else ''
-                    warning = f' · только первые {meta["frames"]} стр. из {meta["original_frames"]}' if meta['reduced'] else ''
+                    warning = f' · только первые {meta["frames"]} кадр(ов) из {meta["original_frames"]}' if meta['reduced'] else ''
                     cadence = f' · {meta["frame_ms"]/1000:g} с/кадр' if meta['frames'] > 1 else ''
                     self.compression_info.configure(text=f'Кадр ≤ {meta["max_frame_bytes"]/1024:.2f} / {meta["budget_bytes"]/1024:g} КБ · вся загрузка {meta["bytes"]/1024:.1f} КБ · {meta["frames"]} кадр(ов) · палитра {meta["colors"]} · {meta["codec"]}{quality}{cadence}{warning}', fg='#70d7a3')
                 elif event == 'compression_error':
@@ -690,6 +690,8 @@ def main():
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
             assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
             assert (core.RESOURCE_ROOT/'Get-ConnectedBluetooth.ps1').exists()
+            idle_frames, _ = core.animation({'App':'', 'Title':'Нет музыки', 'Artist':'', 'Status':'Stopped'})
+            assert len(idle_frames) == 3 and idle_frames[0].size == (160, 128)
             track = core.current_track()
             frames, speed = core.animation(track)
             frames, speed, blob, compression = transmission.prepare(frames, speed, transmission.load_settings())
