@@ -150,7 +150,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\test.ps1
 
 ## Версии и релизы
 
-Текущая версия: **1.3.1**. Используется Semantic Versioning и теги `vMAJOR.MINOR.PATCH`.
+Версия в разработке: **1.3.2**. Последний стабильный релиз — **1.3.1**. Используется Semantic Versioning и теги `vMAJOR.MINOR.PATCH`.
 
 При обновлении согласованно измените `version.py`, `version_info.txt`, `CHANGELOG.md`
 и добавьте заметки в `docs/releases/vX.Y.Z.md`. Скрипт `scripts/check-version.py`

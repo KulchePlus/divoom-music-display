@@ -283,7 +283,6 @@ class App:
         header = tk.Frame(outer, bg=BG)
         header.pack(fill='x')
         tk.Label(header, text='Divoom', bg=BG, fg=TEXT, font=('Segoe UI', 25, 'bold')).pack(side='left')
-        tk.Label(header, text=f'v{VERSION}', bg=BG, fg=MUTED, font=('Segoe UI', 9)).pack(side='left', padx=(9, 0), pady=(12, 0))
         self.status = tk.Label(header, text='●  Отключено', bg=BG, fg=MUTED, font=('Segoe UI', 11))
         self.status.pack(side='right', pady=(12, 0))
         subtitle_row = tk.Frame(outer, bg=BG)
@@ -389,6 +388,9 @@ class App:
                                        bg=BG, activebackground=BG, borderwidth=0, highlightthickness=0,
                                        relief='flat', cursor='hand2', padx=2, pady=2, takefocus=True)
         self.debug_button.place(relx=1.0, rely=1.0, anchor='se', x=-2, y=-2)
+        self.version_label = tk.Label(root, text=f'v{VERSION}', bg=BG, fg='#596372',
+                                      font=('Segoe UI', 9), borderwidth=0, padx=0, pady=0)
+        self.version_label.place(relx=1.0, rely=1.0, anchor='se', x=-36, y=-8)
         self.debug_button.bind('<Enter>', self.show_debug_tip)
         self.debug_button.bind('<Leave>', self.hide_debug_tip)
         round_inputs(root)
