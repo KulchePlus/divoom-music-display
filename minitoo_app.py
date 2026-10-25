@@ -524,7 +524,7 @@ class App:
             self.device_placeholder()
         self.set_state(self.state, self.status._i18n_source.removeprefix('●  '))
         if not devices:
-            self.detail.configure(text='MiniToo не найден. Сопрягите устройство в настройках Bluetooth Windows и нажмите «Обновить».')
+            self.detail.configure(text='Нет подключённых Bluetooth-устройств. Подключите устройство в настройках Windows и нажмите «Обновить».')
 
     def open_debug(self):
         self.hide_debug_tip()
@@ -689,6 +689,7 @@ def main():
             assert (core.RESOURCE_ROOT/'Get-NowPlaying.ps1').exists()
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
             assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
+            assert (core.RESOURCE_ROOT/'Get-ConnectedBluetooth.ps1').exists()
             track = core.current_track()
             frames, speed = core.animation(track)
             frames, speed, blob, compression = transmission.prepare(frames, speed, transmission.load_settings())

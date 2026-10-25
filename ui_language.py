@@ -25,7 +25,7 @@ TRANSLATIONS = {
     'Выберите устройство': 'Select a device', 'Поиск устройств…': 'Finding devices…',
     'Не удалось сохранить устройство: ': 'Could not save the device: ',
     'Не удалось прочитать список устройств: ': 'Could not read the device list: ',
-    'MiniToo не найден. Сопрягите устройство в настройках Bluetooth Windows и нажмите «Обновить».': 'MiniToo was not found. Pair it in Windows Bluetooth settings, then click Refresh.',
+    'Нет подключённых Bluetooth-устройств. Подключите устройство в настройках Windows и нажмите «Обновить».': 'No Bluetooth devices are connected. Connect a device in Windows settings, then click Refresh.',
     'Divoom — музыкальный экран': 'Divoom — music display',
     'Divoom уже используется фоновой программой. Остановите её через Stop.cmd.': 'Divoom is already in use by the background program. Stop it with Stop.cmd.',
     'Музыка с компьютера на вашем экране': 'Music from your computer, on your display',
