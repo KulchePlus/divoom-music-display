@@ -19,7 +19,7 @@ from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
 from ui_tooltip import HelpTip
-from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style
+from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style, RoundedGroup
 
 TITLE = f'Divoom — музыкальный экран · v{VERSION}'
 BG, PANEL, TEXT, MUTED = '#101318', '#191e26', '#f4f6fa', '#929eaf'
@@ -283,7 +283,6 @@ class App:
         header = tk.Frame(outer, bg=BG)
         header.pack(fill='x')
         tk.Label(header, text='Divoom', bg=BG, fg=TEXT, font=('Segoe UI', 25, 'bold')).pack(side='left')
-        tk.Label(header, text=f'v{VERSION}', bg=BG, fg=MUTED, font=('Segoe UI', 9)).pack(side='left', padx=(9, 0), pady=(12, 0))
         self.status = tk.Label(header, text='●  Отключено', bg=BG, fg=MUTED, font=('Segoe UI', 11))
         self.status.pack(side='right', pady=(12, 0))
         subtitle_row = tk.Frame(outer, bg=BG)
@@ -323,9 +322,9 @@ class App:
         self.artist_label = tk.Label(card, text='', bg=PANEL, fg=MUTED,
                                      font=('Segoe UI', 10), anchor='w', wraplength=510, justify='left')
         self.artist_label.pack(fill='x', padx=18, pady=(0, 12))
-        options = tk.LabelFrame(controls, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
-                                font=('Segoe UI', 9), padx=12, pady=10)
-        options.pack(fill='x', pady=(14, 0))
+        self.transfer_group = RoundedGroup(controls, 'Параметры передачи')
+        self.transfer_group.pack(fill='x', pady=(14, 0))
+        options = self.transfer_group.content
         for column in range(3):
             options.columnconfigure(column, weight=1)
         initial = self.controller.get_settings()
@@ -389,6 +388,9 @@ class App:
                                        bg=BG, activebackground=BG, borderwidth=0, highlightthickness=0,
                                        relief='flat', cursor='hand2', padx=2, pady=2, takefocus=True)
         self.debug_button.place(relx=1.0, rely=1.0, anchor='se', x=-2, y=-2)
+        self.version_label = tk.Label(root, text=f'v{VERSION}', bg=BG, fg='#596372',
+                                      font=('Segoe UI', 9), borderwidth=0, padx=0, pady=0)
+        self.version_label.place(relx=1.0, rely=1.0, anchor='se', x=-36, y=-8)
         self.debug_button.bind('<Enter>', self.show_debug_tip)
         self.debug_button.bind('<Leave>', self.hide_debug_tip)
         round_inputs(root)
@@ -522,7 +524,7 @@ class App:
             self.device_placeholder()
         self.set_state(self.state, self.status._i18n_source.removeprefix('●  '))
         if not devices:
-            self.detail.configure(text='MiniToo не найден. Сопрягите устройство в настройках Bluetooth Windows и нажмите «Обновить».')
+            self.detail.configure(text='Нет подключённых Bluetooth-устройств. Подключите устройство в настройках Windows и нажмите «Обновить».')
 
     def open_debug(self):
         self.hide_debug_tip()
@@ -630,7 +632,7 @@ class App:
                 elif event == 'compression':
                     meta = payload
                     quality = f' · качество {meta["quality"]}' if meta['quality'] else ''
-                    warning = f' · только первые {meta["frames"]} стр. из {meta["original_frames"]}' if meta['reduced'] else ''
+                    warning = f' · только первые {meta["frames"]} кадр(ов) из {meta["original_frames"]}' if meta['reduced'] else ''
                     cadence = f' · {meta["frame_ms"]/1000:g} с/кадр' if meta['frames'] > 1 else ''
                     self.compression_info.configure(text=f'Кадр ≤ {meta["max_frame_bytes"]/1024:.2f} / {meta["budget_bytes"]/1024:g} КБ · вся загрузка {meta["bytes"]/1024:.1f} КБ · {meta["frames"]} кадр(ов) · палитра {meta["colors"]} · {meta["codec"]}{quality}{cadence}{warning}', fg='#70d7a3')
                 elif event == 'compression_error':
@@ -687,6 +689,9 @@ def main():
             assert (core.RESOURCE_ROOT/'Get-NowPlaying.ps1').exists()
             assert (core.RESOURCE_ROOT/'Export-AppIcon.ps1').exists()
             assert (core.RESOURCE_ROOT/'Update-App.ps1').exists()
+            assert (core.RESOURCE_ROOT/'Get-ConnectedBluetooth.ps1').exists()
+            idle_frames, _ = core.animation({'App':'', 'Title':'Нет музыки', 'Artist':'', 'Status':'Stopped'})
+            assert len(idle_frames) == 3 and idle_frames[0].size == (160, 128)
             track = core.current_track()
             frames, speed = core.animation(track)
             frames, speed, blob, compression = transmission.prepare(frames, speed, transmission.load_settings())

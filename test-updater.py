@@ -69,6 +69,12 @@ class Updates(unittest.TestCase):
         self.assertIsNone(updater.parse_release(release('v'+updater.VERSION)))
         self.assertIsNone(updater.parse_release(release('v1.2.9')))
         self.assertEqual(updater.parse_release(release())['tag'],'v99.0.0')
+        modern=release()
+        modern['assets'].append({'name':'Divoom.zip','browser_download_url':
+            f'https://github.com/{updater.REPOSITORY}/releases/download/v99.0.0/Divoom.zip'})
+        self.assertEqual(updater.parse_release(modern)['name'],'Divoom.zip')
+        modern['assets']=[asset for asset in modern['assets'] if asset['name']!='Divoom-v99.0.0-windows-x64.zip']
+        self.assertEqual(updater.parse_release(modern)['name'],'Divoom.zip')
         pre=release();pre['prerelease']=True
         self.assertIsNone(updater.parse_release(pre))
         bad=release();bad['assets'][0]['browser_download_url']='https://example.com/evil.zip'
