@@ -19,7 +19,7 @@ from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
 from ui_tooltip import HelpTip
-from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style
+from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style, RoundedGroup
 
 TITLE = f'Divoom — музыкальный экран · v{VERSION}'
 BG, PANEL, TEXT, MUTED = '#101318', '#191e26', '#f4f6fa', '#929eaf'
@@ -322,9 +322,9 @@ class App:
         self.artist_label = tk.Label(card, text='', bg=PANEL, fg=MUTED,
                                      font=('Segoe UI', 10), anchor='w', wraplength=510, justify='left')
         self.artist_label.pack(fill='x', padx=18, pady=(0, 12))
-        options = tk.LabelFrame(controls, text=' Параметры передачи ', bg=PANEL, fg=MUTED,
-                                font=('Segoe UI', 9), padx=12, pady=10)
-        options.pack(fill='x', pady=(14, 0))
+        self.transfer_group = RoundedGroup(controls, 'Параметры передачи')
+        self.transfer_group.pack(fill='x', pady=(14, 0))
+        options = self.transfer_group.content
         for column in range(3):
             options.columnconfigure(column, weight=1)
         initial = self.controller.get_settings()
