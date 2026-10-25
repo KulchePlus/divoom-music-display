@@ -36,7 +36,7 @@ Divoom — настольное приложение, которое получ�
 
 ## Быстрый старт
 
-1. В [Releases](https://github.com/KulchePlus/divoom-music-display/releases/latest) скачайте ZIP для Windows x64.
+1. В [Releases](https://github.com/KulchePlus/divoom-music-display/releases/latest) скачайте **Divoom.zip** для Windows x64.
 2. Распакуйте его в папку, доступную для записи. Для готового EXE Python не нужен.
 3. Сопрягите MiniToo с компьютером в настройках Bluetooth Windows.
 4. Запустите `Divoom.exe`, выберите свой MiniToo в списке подключённых Bluetooth-устройств и нажмите **Подключиться**.
@@ -160,14 +160,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\test.ps1
 
 ## Версии и релизы
 
-Версия в разработке: **1.3.2**. Последний стабильный релиз — **1.3.1**. Используется Semantic Versioning и теги `vMAJOR.MINOR.PATCH`.
+Текущая версия: **1.3.2**. Используется Semantic Versioning и теги `vMAJOR.MINOR.PATCH`.
 
 При обновлении согласованно измените `version.py`, `version_info.txt`, `CHANGELOG.md`
 и добавьте заметки в `docs/releases/vX.Y.Z.md`. Скрипт `scripts/check-version.py`
 проверяет версию приложения, метаданные EXE и тег.
 
 GitHub Actions проверяет и собирает проект на Windows. Публикация тега `v*` запускает выпуск
-ZIP с приложением и SHA-256. Исходники нужной версии GitHub прикладывает к релизу автоматически.
+`Divoom.zip` с приложением и SHA-256. Копия с версией в имени сохраняется для совместимости с автообновлением v1.3.1. Исходники нужной версии GitHub прикладывает к релизу автоматически.
 Версия также видна в заголовке приложения и свойствах файла EXE.
 
 ## Структура проекта

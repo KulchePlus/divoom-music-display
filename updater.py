@@ -61,8 +61,8 @@ def parse_release(data, current=VERSION):
     tag = data['tag_name']
     if version(tag) <= version(current):
         return None
-    name = f'Divoom-{tag}-windows-x64.zip'
     assets = {asset['name']: asset for asset in data.get('assets', [])}
+    name = 'Divoom.zip' if 'Divoom.zip' in assets else f'Divoom-{tag}-windows-x64.zip'
     if name not in assets or 'SHA256SUMS.txt' not in assets:
         raise ValueError('Release assets are incomplete')
     prefix = f'https://github.com/{REPOSITORY}/releases/download/{tag}/'
