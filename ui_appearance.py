@@ -1,6 +1,7 @@
 """Subtle rounded ttk buttons and native Windows window corners."""
 import ctypes
 import tkinter as tk
+import time
 from tkinter import ttk
 from PIL import Image, ImageDraw, ImageTk
 
@@ -25,17 +26,57 @@ class RoundedGroup(tk.Frame):
             widget.bind('<Button-1>', self.toggle)
         self.header.bind('<Return>', self.toggle)
         self.header.bind('<space>', self.toggle)
-        self.content = tk.Frame(self, bg='#191e26')
+        self.viewport = tk.Frame(self, bg='#191e26', height=1)
+        self.viewport.pack_propagate(False)
+        self.content = tk.Frame(self.viewport, bg='#191e26')
+        self.content.place(x=0, y=0, relwidth=1)
+        self._animation_id = None
+        self._animating = False
+        self._visible_height = 0
+        self.content.bind('<Configure>', self.content_resized)
         self.bind('<Configure>', self.paint)
+        self.bind('<Destroy>', self.cancel_animation)
 
     def toggle(self, event=None):
         self.expanded = not self.expanded
         self.chevron.configure(text='▾' if self.expanded else '▸')
-        if self.expanded:
-            self.content.pack(fill='both', expand=True, padx=12, pady=(0, 12))
-        else:
-            self.content.pack_forget()
+        self.cancel_animation()
+        self._animating = True
+        self.update_idletasks()
+        start_height = self._visible_height
+        target_height = self.content.winfo_reqheight()+12 if self.expanded else 0
+        self.viewport.pack(fill='x', padx=12)
+        started = time.perf_counter()
+        duration = .24
+        def tick():
+            self._animation_id = None
+            progress = min(1, (time.perf_counter()-started)/duration)
+            eased = progress*progress*(3-2*progress)
+            self._visible_height = round(start_height+(target_height-start_height)*eased)
+            self.viewport.configure(height=max(1, self._visible_height))
+            if progress < 1:
+                self._animation_id = self.after(12, tick)
+            elif not self.expanded:
+                self._animating = False
+                self.viewport.pack_forget()
+            else:
+                self._animating = False
+                self.content_resized()
+        self._animation_id = self.after(0, tick)
         return 'break'
+
+    def cancel_animation(self, event=None):
+        if event is not None and event.widget != self:
+            return
+        if self._animation_id is not None:
+            self.after_cancel(self._animation_id)
+            self._animation_id = None
+        self._animating = False
+
+    def content_resized(self, event=None):
+        if self.expanded and not self._animating:
+            self._visible_height = self.content.winfo_reqheight()+12
+            self.viewport.configure(height=self._visible_height)
 
     def paint(self, event):
         if event.widget != self or event.width < 20 or event.height < 20:
