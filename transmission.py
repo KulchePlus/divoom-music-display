@@ -80,7 +80,7 @@ def prepare(frames, speed, settings):
         if len(lossless) <= settings.budget_bytes:
             return selected, adjusted_speed, lossless, metadata(settings, original_count, count, len(lossless), len(lossless), 'RGB+Zstd', None, adjusted_speed)
     best_size = None
-    for quality in (95, 85, 75, 65, 55, 45):
+    for quality in (100, 95, 85, 75, 65, 55, 45):
         jpegs = []
         for image in selected:
             out = io.BytesIO()
