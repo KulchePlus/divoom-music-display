@@ -1,5 +1,6 @@
 # Environments and generated builds
 .venv/
+.idea/
 .deps/
 .build-deps/
 .tools/
