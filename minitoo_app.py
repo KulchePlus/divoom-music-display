@@ -15,6 +15,7 @@ import now_playing as core
 from debug_window import DebugWindow
 import transmission
 import updater
+import startup
 from version import VERSION
 import paired_devices
 from ui_language import Localizer, Literal
@@ -241,6 +242,7 @@ class App:
         self.available_update = None
         self.update_busy = False
         self.auto_check = tk.BooleanVar(master=root, value=updater.load_auto_check(core.ROOT))
+        self.start_with_windows = tk.BooleanVar(master=root, value=startup.is_enabled())
         self.startup_check_done = False
         self.devices = []
         self.scanning_devices = False
@@ -380,6 +382,9 @@ class App:
         self.update_button = ttk.Button(update_row, text='Проверить обновления',
             command=self.update_action, style='Language.TButton')
         self.update_button.pack(side='right')
+        self.startup_switch = ttk.Checkbutton(controls, text='  Запускать при загрузке Windows',
+            variable=self.start_with_windows, command=self.save_startup, style='Switch.TCheckbutton')
+        self.startup_switch.pack(anchor='w', pady=(7, 0))
         self.update_status = tk.Label(controls, text='', bg=BG, fg=MUTED,
                                       font=('Segoe UI', 9), anchor='w', wraplength=580)
         self.update_status.pack(fill='x', pady=(3, 0))
@@ -404,6 +409,14 @@ class App:
         else:
             self.device_placeholder()
         root.after(60, self.pump)
+
+    def save_startup(self):
+        try:
+            startup.set_enabled(self.start_with_windows.get())
+        except OSError:
+            logging.exception('Could not save Windows startup setting')
+            self.start_with_windows.set(startup.is_enabled())
+            self.update_status.configure(text='Не удалось изменить автозапуск Windows.')
 
     def save_auto_check(self):
         try:
@@ -765,7 +778,9 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s',
                         handlers=[logging.FileHandler(core.ROOT/'now-playing.log', encoding='utf-8')])
     root = tk.Tk()
-    App(root)
+    app = App(root)
+    if '--background' in sys.argv:
+        app.hide_to_tray()
     root.mainloop()
 
 

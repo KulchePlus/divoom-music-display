@@ -9,6 +9,8 @@ class Literal(str):
 
 
 TRANSLATIONS = {
+    'Запускать при загрузке Windows': 'Start with Windows',
+    'Не удалось изменить автозапуск Windows.': 'Could not change Windows startup.',
     'Открыть': 'Open', 'Выйти': 'Exit',
     'Не удалось создать значок в трее.': 'Could not create the tray icon.',
     ' кадр(ов) из ': ' frame(s) of ',
