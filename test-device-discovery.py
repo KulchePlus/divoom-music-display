@@ -1,9 +1,23 @@
 """Connected-device discovery: no name filter, deduplication and failures."""
 import json
 import subprocess
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 import paired_devices as devices
+
+with tempfile.TemporaryDirectory() as directory:
+ with patch.object(devices, 'PREFERENCES', Path(directory)/'devices.json'):
+  assert devices.load_last_connected() is None
+  devices.save_choice('AA')
+  assert devices.load_last_connected() is None  # Selection is not a successful connection.
+  devices.save_connected('AA')
+  devices.save_choice('BB')
+  assert devices.load_choice() == 'BB'
+  assert devices.load_last_connected() == 'AA'
+  devices.PREFERENCES.write_text('{"mac":"LEGACY"}', encoding='utf-8')
+  assert devices.load_last_connected() == 'LEGACY'
 
 records = [
  {'Name':'My renamed screen','Address':'aa:bb:cc:dd:ee:ff'},

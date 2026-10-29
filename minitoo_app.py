@@ -18,6 +18,7 @@ import updater
 import startup
 from version import VERSION
 import paired_devices
+from bluetooth_watcher import BluetoothWatcher
 from ui_language import Localizer, Literal
 from ui_tooltip import HelpTip
 from ui_appearance import round_window, rounded_buttons, round_widget, round_inputs, switch_style, RoundedGroup
@@ -134,6 +135,10 @@ class Controller:
                         if not self.desired.is_set():
                             continue
                         last_sent = None
+                        try:
+                            paired_devices.save_connected(self.device_mac)
+                        except OSError:
+                            logging.exception('Could not remember connected device')
                         self.events.put(('state', ('connected', 'Подключено')))
                     if self.debug_mode.is_set():
                         try:
@@ -246,6 +251,11 @@ class App:
         self.startup_check_done = False
         self.devices = []
         self.scanning_devices = False
+        self.startup_device = paired_devices.load_last_connected() if start_worker else None
+        self.startup_connect_pending = start_worker
+        self.auto_connect_enabled = True
+        self.bluetooth_devices = set()
+        self.bluetooth_watcher = BluetoothWatcher(self.events)
         root.title(TITLE)
         root.configure(bg=BG)
         root.geometry('680x900')
@@ -404,7 +414,11 @@ class App:
         self.language_button.configure(text='EN' if self.locale.language == 'ru' else 'RU')
         if start_worker:
             self.controller.thread.start()
-            self.refresh_devices()
+            self.scanning_devices = True
+            self.device_choice.configure(state='disabled')
+            self.refresh_devices_button.configure(state='disabled')
+            self.device_placeholder()
+            self.bluetooth_watcher.start()
             root.after(1500, self.check_updates_at_startup)
         else:
             self.device_placeholder()
@@ -471,6 +485,7 @@ class App:
 
     def toggle(self):
         if self.state in ('connecting', 'connected', 'sending', 'disconnecting'):
+            self.auto_connect_enabled = False
             self.set_state('disconnecting', 'Отключение…')
             self.controller.disconnect()
         else:
@@ -478,6 +493,7 @@ class App:
                 self.detail.configure(text='Выберите устройство')
                 return
             self.detail.configure(text='Соединение с устройством по Bluetooth…')
+            self.auto_connect_enabled = True
             self.set_state('connecting', 'Подключение…')
             self.controller.connect()
 
@@ -523,11 +539,13 @@ class App:
             self.detail.configure(text='Не удалось сохранить устройство: '+str(error))
 
     def receive_devices(self, devices):
+        reconnect = self.startup_device if self.startup_connect_pending else None
+        self.startup_connect_pending = False
         self.scanning_devices = False
         self.devices = devices
         self.device_choice.configure(values=[f'{name} · {mac}' for mac, name in devices])
         selected = next((i for i, device in enumerate(devices)
-                         if device[0] == self.controller.device_mac), None)
+                         if device[0] == (reconnect or self.controller.device_mac)), None)
         if selected is None and len(devices) == 1:
             selected = 0
         if selected is not None:
@@ -539,6 +557,27 @@ class App:
         self.set_state(self.state, self.status._i18n_source.removeprefix('●  '))
         if not devices:
             self.detail.configure(text='Нет подключённых Bluetooth-устройств. Подключите устройство в настройках Windows и нажмите «Обновить».')
+        if (self.auto_connect_enabled and reconnect and any(mac == reconnect for mac, _ in devices)
+                and self.state == 'disconnected' and not self.controller.desired.is_set()):
+            self.toggle()
+
+    def receive_bluetooth_devices(self, devices):
+        addresses = {mac for mac, _ in devices}
+        arrived = addresses - self.bluetooth_devices
+        self.bluetooth_devices = addresses
+        target = paired_devices.load_last_connected()
+        if self.controller.desired.is_set():
+            # Preserve the selected endpoint while its transport is active.
+            if self.controller.device_mac not in addresses:
+                self.controller.disconnect()
+                self.set_state('disconnected', 'Отключено')
+        self.receive_devices(devices)
+        if (self.auto_connect_enabled and target in arrived
+                and not self.controller.desired.is_set()
+                and self.state in ('disconnected', 'error')):
+            self.device_choice.current(next(i for i, item in enumerate(devices) if item[0] == target))
+            self.select_device()
+            self.toggle()
 
     def open_debug(self):
         self.hide_debug_tip()
@@ -632,6 +671,12 @@ class App:
                         self.set_state(*payload)
                 elif event == 'devices':
                     self.receive_devices(payload)
+                elif event == 'bluetooth_devices':
+                    self.receive_bluetooth_devices(payload)
+                elif event == 'bluetooth_error':
+                    logging.warning('Bluetooth events unavailable; manual refresh remains available')
+                    self.scanning_devices = False
+                    self.refresh_devices()
                 elif event == 'devices_error':
                     self.receive_devices([])
                     self.detail.configure(text='Не удалось прочитать список устройств: '+payload)
@@ -699,6 +744,7 @@ class App:
 
     def close(self):
         self.closed = True
+        self.bluetooth_watcher.close()
         if self.tray_icon:
             self.tray_icon.stop()
             self.tray_icon = None
