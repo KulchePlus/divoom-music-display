@@ -120,7 +120,8 @@ def launch_install(staging, target, resource_root):
         'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
         '-File', str(helper), '-AppProcessId', str(os.getpid()),
         '-Target', str(target), '-Staging', str(staging),
-    ], creationflags=subprocess.CREATE_NO_WINDOW)
+    ], creationflags=subprocess.CREATE_NO_WINDOW,
+       env={**os.environ, 'PYINSTALLER_RESET_ENVIRONMENT': '1'})
     for _ in range(100):
         if (staging/'ready').exists():
             return process
