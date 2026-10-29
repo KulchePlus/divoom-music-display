@@ -5,6 +5,9 @@ param(
     [switch]$NoRestart
 )
 $ErrorActionPreference = 'Stop'
+# The previous one-file instance removes its _MEI directory on exit.
+# Restart as an independent instance instead of reusing that directory.
+$env:PYINSTALLER_RESET_ENVIRONMENT = '1'
 $targetPath = [IO.Path]::GetFullPath($Target)
 $stagingPath = [IO.Path]::GetFullPath($Staging)
 $appFolder = [IO.Path]::GetDirectoryName($targetPath)

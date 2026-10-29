@@ -29,6 +29,15 @@ def archive(entries):
     return stream.getvalue()
 
 class Updates(unittest.TestCase):
+    def test_helper_gets_independent_bootloader_environment(self):
+        with tempfile.TemporaryDirectory(dir=ROOT,prefix='update-test-') as folder:
+            self.assertTrue(Path(folder).resolve().is_relative_to(ROOT))
+            staging=Path(folder)/'.divoom-update-test';staging.mkdir()
+            (staging/'ready').write_text('ready')
+            with patch.object(sys,'frozen',True,create=True), patch('updater.subprocess.Popen') as launch:
+                updater.launch_install(staging,Path(folder)/'Divoom.exe',ROOT)
+                self.assertEqual(launch.call_args.kwargs['env']['PYINSTALLER_RESET_ENVIRONMENT'],'1')
+
     def test_auto_check_preference_and_startup_only(self):
         with tempfile.TemporaryDirectory(dir=ROOT,prefix='update-test-') as folder:
             self.assertTrue(Path(folder).resolve().is_relative_to(ROOT))
