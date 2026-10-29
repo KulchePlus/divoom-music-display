@@ -7,6 +7,7 @@ import ssl
 datas = [('Get-ConnectedBluetooth.ps1', '.'), ('Get-NowPlaying.ps1', '.'), ('Export-AppIcon.ps1', '.'), ('Update-App.ps1', '.'), ('minitoo.ico', '.')]
 binaries = []
 datas.append(('resources/idle-night.png', 'resources'))
+datas.append(('Watch-Bluetooth.ps1', '.'))
 hiddenimports = []
 datas += collect_data_files('tzdata')
 # Some Python distributions ship an additional SSL policy certificate beside ssl.py.
