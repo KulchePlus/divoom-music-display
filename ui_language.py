@@ -9,6 +9,8 @@ class Literal(str):
 
 
 TRANSLATIONS = {
+    'Открыть': 'Open', 'Выйти': 'Exit',
+    'Не удалось создать значок в трее.': 'Could not create the tray icon.',
     ' кадр(ов) из ': ' frame(s) of ',
     'Автообновления': 'Auto updates',
     'Проверять новые версии только при запуске приложения. Установка — по кнопке.': 'Check for new versions only when the app starts. Installation requires a button click.',

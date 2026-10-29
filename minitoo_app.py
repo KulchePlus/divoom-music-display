@@ -248,7 +248,8 @@ class App:
         root.configure(bg=BG)
         root.geometry('680x900')
         root.minsize(620, 840)
-        root.protocol('WM_DELETE_WINDOW', self.close)
+        self.tray_icon = None
+        root.protocol('WM_DELETE_WINDOW', self.hide_to_tray)
         icon = core.RESOURCE_ROOT/'minitoo.ico'
         if icon.exists():
             root.iconbitmap(str(icon))
@@ -607,7 +608,13 @@ class App:
         try:
             while True:
                 event, payload = self.events.get_nowait()
-                if event == 'state':
+                if event == 'tray_show':
+                    self.root.deiconify()
+                    self.root.lift()
+                elif event == 'tray_exit':
+                    self.close()
+                    return
+                elif event == 'state':
                     if self.state != 'disconnecting' or payload[0] in ('disconnected', 'error'):
                         self.set_state(*payload)
                 elif event == 'devices':
@@ -657,8 +664,31 @@ class App:
         self.paint()
         self.root.after(60, self.pump)
 
+    def hide_to_tray(self):
+        if self.tray_icon is None:
+            try:
+                import pystray
+                with Image.open(core.RESOURCE_ROOT/'minitoo.ico') as source:
+                    icon_image = source.convert('RGBA')
+                self.tray_icon = pystray.Icon('Divoom', icon_image, 'Divoom', menu=pystray.Menu(
+                    pystray.MenuItem(lambda item: self.locale.text('Открыть'), lambda icon, item: self.events.put(('tray_show', None)), default=True),
+                    pystray.MenuItem(lambda item: self.locale.text('Выйти'), lambda icon, item: self.events.put(('tray_exit', None)))))
+                self.tray_icon.run_detached()
+            except Exception:
+                self.tray_icon = None
+                logging.exception('Could not create tray icon')
+                self.detail.configure(text='Не удалось создать значок в трее.')
+                return
+        self.hide_debug_tip()
+        if self.debug_window:
+            self.debug_window.close()
+        self.root.withdraw()
+
     def close(self):
         self.closed = True
+        if self.tray_icon:
+            self.tray_icon.stop()
+            self.tray_icon = None
         self.hide_debug_tip()
         if self.debug_window:
             self.debug_window.close(resume=False)
